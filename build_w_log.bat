@@ -1,0 +1,1 @@
+call build.bat > build.log 2>&1
