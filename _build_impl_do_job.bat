@@ -45,7 +45,7 @@
 @cd ..
 
 @rem Post-clean, rem this if your want to see build generated files
-@rem if exist .build rd /S /Q .build
+@if exist .build rd /S /Q .build
 
 @exit /B
 
