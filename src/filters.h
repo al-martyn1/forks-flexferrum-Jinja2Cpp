@@ -304,7 +304,9 @@ public:
     {
         CapitalMode,
         CamelMode,
-        EscapeCppMode,
+        EscapeCppMode,  // C/C++ string escape
+        IdentMode,   // C/C++ identifier
+        //IdentMode,      // C/C++ identifier with styles
         EscapeHtmlMode,
         LowerMode,
         ReplaceMode,
@@ -317,6 +319,8 @@ public:
         WordWrapMode,
         UnderscoreMode,
         UrlEncodeMode,
+        LeftMode,
+        RightMode,
         CenterMode
     };
 

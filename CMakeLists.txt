@@ -135,6 +135,20 @@ else()
     endif()
 endif()
 
+
+# https://cmake.org/cmake/help/latest/variable/MSVC_VERSION.html
+# 1920-1929 = VS 16.0 (v142 toolset)
+# https://cmake.org/cmake/help/latest/variable/MSVC_TOOLSET_VERSION.html
+# 142       = VS 2019 (16.0)
+
+if (MSVC)
+    #if (MSVC_VERSION )
+    #endif()
+endif()
+
+
+# /fsanitize=address
+
 include(collect_sources)
 
 set (LIB_TARGET_NAME jinja2cpp)

@@ -14,10 +14,10 @@
 @rem Config - RelWithDebInfo
 @rem Config - MinSizeRel
 
-@call _build_impl_do_job.bat "Visual Studio 15 2017" Win32 msvc2017 x86 Debug
-@call _build_impl_do_job.bat "Visual Studio 15 2017" Win32 msvc2017 x86 Release
-@call _build_impl_do_job.bat "Visual Studio 15 2017" x64   msvc2017 x64 Debug
-@call _build_impl_do_job.bat "Visual Studio 15 2017" x64   msvc2017 x64 Release
+@rem call _build_impl_do_job.bat "Visual Studio 15 2017" Win32 msvc2017 x86 Debug
+@rem call _build_impl_do_job.bat "Visual Studio 15 2017" Win32 msvc2017 x86 Release
+@rem call _build_impl_do_job.bat "Visual Studio 15 2017" x64   msvc2017 x64 Debug
+@rem call _build_impl_do_job.bat "Visual Studio 15 2017" x64   msvc2017 x64 Release
 
 @call _build_impl_do_job.bat "Visual Studio 16 2019" Win32 msvc2019 x86 Debug
 @call _build_impl_do_job.bat "Visual Studio 16 2019" Win32 msvc2019 x86 Release

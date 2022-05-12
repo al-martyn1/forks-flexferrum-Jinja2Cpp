@@ -213,7 +213,16 @@ public:
      */
     nonstd::optional<size_t> GetSize() const
     {
-        return m_accessor ? m_accessor()->GetSize() : nonstd::optional<size_t>();
+        if (m_accessor)
+        {
+            auto sz = m_accessor()->GetSize();
+            return nonstd::optional<size_t>(sz);
+        }
+        else
+        {
+            return nonstd::optional<size_t>();
+        }
+        //return m_accessor ? m_accessor()->GetSize() : nonstd::optional<size_t>();
     }
 
     /*!
@@ -223,6 +232,16 @@ public:
      */
     auto GetAccessor() const
     {
+        /*
+        if (m_accessor)
+        {
+            return m_accessor();
+        }
+        else
+        {
+            return nullptr;
+        }
+        */
         return m_accessor ? m_accessor() : nullptr;
     }
 

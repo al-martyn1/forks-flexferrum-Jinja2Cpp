@@ -318,9 +318,21 @@ public:
     {
     }
 
-    const T& Get() const { return *m_val; }
-    T& Get() { return *const_cast<T*>(m_val); }
-    bool ShouldExtendLifetime() const { return false; }
+    const T& Get() const
+    {
+        return *m_val;
+    }
+
+    T& Get() 
+    {
+        return *const_cast<T*>(m_val);
+    }
+
+    bool ShouldExtendLifetime() const
+    {
+        return false;
+    }
+
     bool operator==(const ByRef<T>& other) const
     {
         if (m_val && other.m_val && m_val != other.m_val)
@@ -329,10 +341,12 @@ public:
             return false;
         return true;
     }
+
     bool operator!=(const ByRef<T>& other) const
     {
         return !(*this == other);
     }
+
 private:
     const T* m_val{};
 };
@@ -347,17 +361,31 @@ public:
     }
     ~ByVal() = default;
 
-    const T& Get() const { return m_val; }
-    T& Get() { return m_val; }
-    bool ShouldExtendLifetime() const { return false; }
+    const T& Get() const
+    {
+        return m_val;
+    }
+
+    T& Get()
+    {
+        return m_val;
+    }
+
+    bool ShouldExtendLifetime() const
+    {
+        return false;
+    }
+
     bool operator==(const ByVal<T>& other) const
     {
         return m_val == other.m_val;
     }
+
     bool operator!=(const ByVal<T>& other) const
     {
         return !(*this == other);
     }
+
 private:
     T m_val;
 };
@@ -372,9 +400,20 @@ public:
     }
     ~BySharedVal() = default;
 
-    const T& Get() const { return *m_val; }
-    T& Get() { return *m_val; }
-    bool ShouldExtendLifetime() const { return true; }
+    const T& Get() const
+    {
+        return *m_val;
+    }
+
+    T& Get()
+    {
+        return *m_val;
+    }
+
+    bool ShouldExtendLifetime() const
+    {
+        return true;
+    }
 
     bool operator==(const BySharedVal<T>& other) const
     {
@@ -430,7 +469,11 @@ public:
     {
     }
 
-    nonstd::optional<size_t> GetSize() const override { return m_values.Get().GetSize(); }
+    nonstd::optional<size_t> GetSize() const override 
+    {
+        return m_values.Get().GetSize();
+    }
+
     nonstd::optional<InternalValue> GetItem(int64_t idx) const override
     {
         const IListItemAccessor* accessor = m_values.Get().GetAccessor();

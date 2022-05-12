@@ -31,6 +31,13 @@
 @rem   - cmake --build . --target all --config %configuration%
 
 
+@set SANITIZERS_CFG=
+@if "%TARGET_CONFIG%"=="Debug" goto SANITIZERS_DEBUG_CFG
+:SANITIZERS_RELEASE_CFG
+@rem set SANITIZERS_CFG=-DJINJA2CPP_WITH_SANITIZERS=address+undefined
+:SANITIZERS_DEBUG_CFG
+
+@set CXX17=-DJINJA2CPP_CXX_STANDARD=17
 
 
 @if exist .build rd /S /Q .build
@@ -38,10 +45,11 @@
 
 @cd .build
 
+@rem address+undefined|memory
 @echo --- Invoking CMake Generation 
-@cmake .. %CMAKE_GENERATE_INVOKE_ARGS_BASE% %CMAKE_ARG_CONFIG_TYPE% -DJINJA2CPP_DEPS_MODE=internal
+@cmake .. %CMAKE_GENERATE_INVOKE_ARGS_BASE% %CMAKE_ARG_CONFIG_TYPE% -DJINJA2CPP_DEPS_MODE=internal %SANITIZERS_CFG% %CXX17%
 @echo --- Invoking CMake Build 
-@cmake --build . %HOST% %CMAKE_ARG_CONFIG_TYPE% --target install --config %TARGET_CONFIG%
+@cmake --build . %HOST% %CMAKE_ARG_CONFIG_TYPE% --target install --config %TARGET_CONFIG% %SANITIZERS_CFG% %CXX17%
 @cd ..
 
 @rem Post-clean, rem this if your want to see build generated files

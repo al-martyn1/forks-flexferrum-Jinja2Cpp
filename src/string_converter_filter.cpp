@@ -11,6 +11,8 @@
 #include <boost/algorithm/string/trim_all.hpp>
 #include <boost/algorithm/string/replace.hpp>
 
+#include "marty_cpp/marty_cpp.h"
+
 namespace ba = boost::algorithm;
 
 namespace jinja2
@@ -179,6 +181,11 @@ StringConverter::StringConverter(FilterParams params, StringConverter::Mode mode
     case CenterMode:
         ParseParams({{"width", false, static_cast<int64_t>(80)}}, params);
         break;
+    case IdentMode:
+        ParseParams({{"style", true}}, params);
+        break;
+
+
     default: break;
     }
 }
@@ -322,6 +329,141 @@ InternalValue StringConverter::Filter(const InternalValue& baseVal, RenderContex
             isFirstChar = false;
         });
         break;
+    case CamelMode:
+        result = ApplyStringConverter<GenericStringEncoder>(baseVal, [isFirstChar = true, &isAlpha](auto ch, auto&& fn) mutable {
+            if (isAlpha(ch) && isFirstChar)
+            {
+                fn(std::tolower(ch, std::locale()));
+            }
+            else
+                fn(ch);
+
+            isFirstChar = false;
+        });
+        break;
+    case UnderscoreMode:
+        result = ApplyStringConverter<GenericStringEncoder>(baseVal, [isFirstChar = true, &isAlpha](auto ch, auto&& fn) mutable {
+            if (isFirstChar)
+            {
+                fn('_');
+            }
+
+            fn(ch);
+
+            isFirstChar = false;
+        });
+        break;
+    // C/C++ identifier
+    case IdentMode:
+        result = ApplyStringConverter(baseVal, [this, &context](auto srcStr) -> TargetString {
+            std::decay_t<decltype(srcStr)> emptyStrView;
+            using CharT = typename decltype(emptyStrView)::value_type;
+            using string_type = std::basic_string<CharT>;
+            std::basic_string<CharT> emptyStr;
+            auto nameStyleStr = GetAsSameString(srcStr, this->GetArgumentValue("style", context)).value_or( /* emptyStr */ marty_cpp::makeString<CharT>("camel") );
+            auto str = sv_to_string(srcStr);
+
+            marty_cpp::NameStyle nameStyle = marty_cpp::NameStyle::unknownStyle;
+
+            if (nameStyleStr==marty_cpp::makeString<CharT>("cpp") || nameStyleStr==marty_cpp::makeString<CharT>("snake"))
+                nameStyle = marty_cpp::NameStyle::cppStyle ;
+
+            else if (nameStyleStr==marty_cpp::makeString<CharT>("camel"))
+                nameStyle = marty_cpp::NameStyle::camelStyle ;
+
+            else if (nameStyleStr==marty_cpp::makeString<CharT>("pascal"))
+                nameStyle = marty_cpp::NameStyle::pascalStyle ;
+
+            else if (nameStyleStr==marty_cpp::makeString<CharT>("camelmixed") || nameStyleStr==marty_cpp::makeString<CharT>("camelsnake") || nameStyleStr==marty_cpp::makeString<CharT>("camelcpp"))
+                nameStyle = marty_cpp::NameStyle::cppCamelMixedStyle ;
+
+            else if (nameStyleStr==marty_cpp::makeString<CharT>("pascalmixed") || nameStyleStr==marty_cpp::makeString<CharT>("pascalsnake") || nameStyleStr==marty_cpp::makeString<CharT>("pascalcpp"))
+                nameStyle = marty_cpp::NameStyle::cppPascalMixedStyle ;
+
+            else if (nameStyleStr==marty_cpp::makeString<CharT>("define") || nameStyleStr==marty_cpp::makeString<CharT>("sql"))
+                nameStyle = marty_cpp::NameStyle::defineStyle ;
+
+            if (nameStyleStr==marty_cpp::makeString<CharT>("_cpp") || nameStyleStr==marty_cpp::makeString<CharT>("_snake"))
+                nameStyle = marty_cpp::NameStyle::cppUnderscoredStyle ;
+
+            else if (nameStyleStr==marty_cpp::makeString<CharT>("_camel"))
+                nameStyle = marty_cpp::NameStyle::camelUnderscoredStyle ;
+
+            else if (nameStyleStr==marty_cpp::makeString<CharT>("_pascal"))
+                nameStyle = marty_cpp::NameStyle::pascalUnderscoredStyle ;
+
+            else if (nameStyleStr==marty_cpp::makeString<CharT>("_camelmixed") || nameStyleStr==marty_cpp::makeString<CharT>("_camelsnake") || nameStyleStr==marty_cpp::makeString<CharT>("_camelcpp"))
+                nameStyle = marty_cpp::NameStyle::cppCamelMixedUnderscoredStyle ;
+
+            else if (nameStyleStr==marty_cpp::makeString<CharT>("_pascalmixed") || nameStyleStr==marty_cpp::makeString<CharT>("_pascalsnake") || nameStyleStr==marty_cpp::makeString<CharT>("_pascalcpp"))
+                nameStyle = marty_cpp::NameStyle::cppPascalMixedUnderscoredStyle ;
+
+            else if (nameStyleStr==marty_cpp::makeString<CharT>("_define") || nameStyleStr==marty_cpp::makeString<CharT>("_sql"))
+                nameStyle = marty_cpp::NameStyle::defineUnderscoredStyle ;
+
+            if (nameStyle==marty_cpp::NameStyle::unknownStyle)
+                return str;
+
+            return marty_cpp::formatName( str, nameStyle );
+
+
+            /*
+            if (count == 0)
+                ba::replace_all(str, oldStr, newStr);
+            else
+            {
+                for (int64_t n = 0; n < count; ++ n)
+                    ba::replace_first(str, oldStr, newStr);
+            }
+            return str;
+            */
+        });
+        break;
+
+    /*
+    case IdentMode:
+        ParseParams({{"style", true}}, params);
+        break;
+
+        result = ApplyStringConverter<GenericStringEncoder>(baseVal, [isFirstChar = true, &isAlpha](auto ch, auto&& fn) mutable {
+
+            if (isFirstChar && (ch>='0' && ch<='9'))
+            {
+                fn('_');
+                fn(ch);
+            }
+            if (isAlpha(ch) || (ch>='0' && ch<='9') || ch=='_')
+            {
+                fn(ch);
+            }
+            else
+            {
+                fn('_');
+            }
+            isFirstChar = false;
+        });
+        break;
+    */
+    // C/C++ string escape
+    case EscapeCppMode:
+        result = ApplyStringConverter<GenericStringEncoder>(baseVal, [isFirstChar = true, &isAlpha](auto ch, auto&& fn) mutable {
+            switch(ch)
+            {
+                case '\'':
+                    fn('\\', '\'');
+                    break;
+                case '\"':
+                    fn('\\', '\"');
+                    break;
+                case '\\':
+                    fn('\\', '\\');
+                    break;
+                default:
+                    fn(ch);
+                    break;
+            }
+        });
+        break;
     case EscapeHtmlMode:
         result = ApplyStringConverter<GenericStringEncoder>(baseVal, [](auto ch, auto&& fn) mutable {
             switch(ch)
@@ -369,6 +511,30 @@ InternalValue StringConverter::Filter(const InternalValue& baseVal, RenderContex
                 ba::replace_all(str, *it, *(it + 1));
             }
             return str;
+        });
+        break;
+    case LeftMode:
+        result = ApplyStringConverter(baseVal, [this, &context](auto srcStr) -> TargetString {
+            auto width = ConvertToInt(this->GetArgumentValue("width", context));
+            auto str = sv_to_string(srcStr);
+            auto string_length = static_cast<long long int>(str.size());
+            if (string_length >= width)
+                return str;
+            auto whitespaces = width - string_length;
+            str.insert(0, static_cast<std::string::size_type>(whitespaces), ' ');
+            return TargetString(std::move(str));
+        });
+        break;
+    case RightMode:
+        result = ApplyStringConverter(baseVal, [this, &context](auto srcStr) -> TargetString {
+            auto width = ConvertToInt(this->GetArgumentValue("width", context));
+            auto str = sv_to_string(srcStr);
+            auto string_length = static_cast<long long int>(str.size());
+            if (string_length >= width)
+                return str;
+            auto whitespaces = width - string_length;
+            str.append(static_cast<std::string::size_type>(whitespaces), ' ');
+            return TargetString(std::move(str));
         });
         break;
     case CenterMode:
