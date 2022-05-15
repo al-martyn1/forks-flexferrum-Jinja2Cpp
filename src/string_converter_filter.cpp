@@ -343,7 +343,7 @@ InternalValue StringConverter::Filter(const InternalValue& baseVal, RenderContex
         break;
     case UnderscoreMode:
         result = ApplyStringConverter<GenericStringEncoder>(baseVal, [isFirstChar = true, &isAlpha](auto ch, auto&& fn) mutable {
-            if (isFirstChar)
+            if (isFirstChar && ch!='_')
             {
                 fn('_');
             }
@@ -353,15 +353,36 @@ InternalValue StringConverter::Filter(const InternalValue& baseVal, RenderContex
             isFirstChar = false;
         });
         break;
+
+    case EscapeIdentMode:
+        result = ApplyStringConverter(baseVal, [this, &context, &isAlpha](auto srcStr) -> TargetString {
+            std::decay_t<decltype(srcStr)> emptyStrView;
+            using CharT = typename decltype(emptyStrView)::value_type;
+            using string_type = std::basic_string<CharT>;
+            std::basic_string<CharT> emptyStr;
+            auto str = sv_to_string(srcStr);
+
+            string_type resStr = marty_cpp::fixName(str);
+            resStr = marty_cpp::filterName( resStr
+                                       , true // allowNonAsciiIdents
+                                       // TODO: !!! Add support for forceAllowedChars
+                                       );
+            return marty_cpp::fixName(resStr);
+        });
+        break;
+
     // C/C++ identifier
     case IdentMode:
-        result = ApplyStringConverter(baseVal, [this, &context](auto srcStr) -> TargetString {
+        result = ApplyStringConverter(baseVal, [this, &context, &isAlpha](auto srcStr) -> TargetString {
             std::decay_t<decltype(srcStr)> emptyStrView;
             using CharT = typename decltype(emptyStrView)::value_type;
             using string_type = std::basic_string<CharT>;
             std::basic_string<CharT> emptyStr;
             auto nameStyleStr = GetAsSameString(srcStr, this->GetArgumentValue("style", context)).value_or( /* emptyStr */ marty_cpp::makeString<CharT>("camel") );
             auto str = sv_to_string(srcStr);
+
+            string_type resStr = marty_cpp::fixName(str);
+
 
             marty_cpp::NameStyle nameStyle = marty_cpp::NameStyle::unknownStyle;
 
@@ -402,21 +423,10 @@ InternalValue StringConverter::Filter(const InternalValue& baseVal, RenderContex
                 nameStyle = marty_cpp::NameStyle::defineUnderscoredStyle ;
 
             if (nameStyle==marty_cpp::NameStyle::unknownStyle)
-                return str;
+                return resStr;
 
-            return marty_cpp::formatName( str, nameStyle );
+            return marty_cpp::fixName(marty_cpp::formatName( resStr, nameStyle ));
 
-
-            /*
-            if (count == 0)
-                ba::replace_all(str, oldStr, newStr);
-            else
-            {
-                for (int64_t n = 0; n < count; ++ n)
-                    ba::replace_first(str, oldStr, newStr);
-            }
-            return str;
-            */
         });
         break;
 

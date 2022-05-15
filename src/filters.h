@@ -112,6 +112,23 @@ public:
     }
 };
 
+class Split : public FilterBase
+{
+public:
+    Split(FilterParams params);
+
+    InternalValue Filter(const InternalValue& baseVal, RenderContext& context) override;
+    bool IsEqual(const IComparable& other) const override
+    {
+        auto* value = dynamic_cast<const Split*>(&other);
+        if (!value)
+            return false;
+        if (m_args != value->m_args)
+            return false;
+        return true;
+    }
+};
+
 class Join : public FilterBase
 {
 public:
@@ -304,9 +321,9 @@ public:
     {
         CapitalMode,
         CamelMode,
-        EscapeCppMode,  // C/C++ string escape
-        IdentMode,   // C/C++ identifier
-        //IdentMode,      // C/C++ identifier with styles
+        EscapeCppMode,    // C/C++ string escape
+        IdentMode,        // C/C++ identifier
+        EscapeIdentMode,  // C/C++ identifier chars filtering mode: replace all non-allowed chars with '_'
         EscapeHtmlMode,
         LowerMode,
         ReplaceMode,

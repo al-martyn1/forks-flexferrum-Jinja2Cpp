@@ -22,6 +22,7 @@
 @call _build_impl_do_job.bat "Visual Studio 16 2019" Win32 msvc2019 x86 Debug
 @call _build_impl_do_job.bat "Visual Studio 16 2019" Win32 msvc2019 x86 Release
 @call _build_impl_do_job.bat "Visual Studio 16 2019" x64   msvc2019 x64 Debug
+@set KEEP_BUILD_DIR=1
 @call _build_impl_do_job.bat "Visual Studio 16 2019" x64   msvc2019 x64 Release
 
 @exit /B

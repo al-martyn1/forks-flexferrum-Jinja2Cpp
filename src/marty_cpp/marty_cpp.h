@@ -1,21 +1,29 @@
 /*! \file
-    \brief 
+    \brief C++ (also good for other langs) identifiers style autodetect and format
  */
 
 #pragma once
 
 #include <string>
+#include <cstring>
 #include <set>
 
 #include  <cwctype>
 #include  <cctype>
 
+//----------------------------------------------------------------------------
 
 
+
+
+//----------------------------------------------------------------------------
 namespace marty_cpp
 {
 
 
+
+
+//----------------------------------------------------------------------------
 enum class NameStyle
 {
     unknownStyle                   ,
@@ -29,6 +37,7 @@ enum class NameStyle
     defineStyle                    ,
     sqlStyle                         = defineStyle,
 
+    // keep underscores while formatting
     cppUnderscoredStyle            ,
     camelUnderscoredStyle          ,
     pascalUnderscoredStyle         ,
@@ -39,6 +48,7 @@ enum class NameStyle
 
 };
 
+//------------------------------
 struct NameStyleLess
 {
     bool operator()( NameStyle n1, NameStyle n2 ) const
@@ -47,9 +57,13 @@ struct NameStyleLess
     }
 };
 
+//----------------------------------------------------------------------------
 
 
-enum NameCharClass
+
+
+//----------------------------------------------------------------------------
+enum class NameCharClass
 {
     unknown      ,
     digit        ,
@@ -58,8 +72,7 @@ enum NameCharClass
     underscore
 };
 
-
-
+//------------------------------
 inline std::string toString( NameStyle ns )
 {
     switch(ns)
@@ -84,6 +97,7 @@ inline std::string toString( NameStyle ns )
     }
 }
 
+//------------------------------
 inline NameStyle getNameStyleUnderlinedBuddy( NameStyle ns )
 {
     switch(ns)
@@ -99,6 +113,7 @@ inline NameStyle getNameStyleUnderlinedBuddy( NameStyle ns )
     }
 }
 
+//------------------------------
 inline NameStyle getNameStyleNotUnderlinedBuddy( NameStyle ns )
 {
     switch(ns)
@@ -114,6 +129,7 @@ inline NameStyle getNameStyleNotUnderlinedBuddy( NameStyle ns )
     }
 }
 
+//------------------------------
 inline NameStyle getNameStyleBuddy( NameStyle ns, bool underlinedBuddy )
 {
     if (underlinedBuddy)
@@ -163,6 +179,13 @@ inline NameStyleSet makeAllNameStyles()
     return makeAllNameStylesSet();
 }
 
+//----------------------------------------------------------------------------
+
+
+#if 0
+
+// std::* functions fails on non-ascii chars (assertion failed)
+
 inline bool    isAlpha( char ch )     { return std::isalpha( ch ) ? true : false; }
 inline bool    isLower( char ch )     { return std::islower( ch ) ? true : false; }
 inline bool    isUpper( char ch )     { return std::isupper( ch ) ? true : false; }
@@ -178,8 +201,86 @@ inline bool    isDigit( wchar_t ch )  { return std::iswdigit( ch ) ? true : fals
 inline bool    getCase( wchar_t ch )  { return isUpper(ch); }
 inline wchar_t toLower( wchar_t ch )  { return (wchar_t)std::towlower(ch); }
 inline wchar_t toUpper( wchar_t ch )  { return (wchar_t)std::towupper(ch); }
+#endif
 
 
+//----------------------------------------------------------------------------
+
+inline bool    isLower( char ch )     { return (ch>='a' && ch<='z'); }
+inline bool    isUpper( char ch )     { return (ch>='A' && ch<='Z'); }
+inline bool    isAlpha( char ch )     { return isLower(ch) || isUpper(ch); }
+inline bool    isDigit( char ch )     { return (ch>='0' && ch<='9'); }
+inline bool    getCase( char ch )     { return isUpper(ch); }
+inline char    toLower( char ch )     { return isUpper(ch) ? ch-'A'+'a' : ch; }
+inline char    toUpper( char ch )     { return isLower(ch) ? ch-'a'+'A' : ch; }
+
+inline bool    isLower( wchar_t ch )  { return (ch>=L'a' && ch<=L'z'); }
+inline bool    isUpper( wchar_t ch )  { return (ch>=L'A' && ch<=L'Z'); }
+inline bool    isAlpha( wchar_t ch )  { return isLower(ch) || isUpper(ch); }
+inline bool    isDigit( wchar_t ch )  { return (ch>=L'0' && ch<=L'9'); }
+inline bool    getCase( wchar_t ch )  { return isUpper(ch); }
+inline wchar_t toLower( wchar_t ch )  { return isUpper(ch) ? ch-L'A'+L'a' : ch; }
+inline wchar_t toUpper( wchar_t ch )  { return isLower(ch) ? ch-L'a'+L'A' : ch; }
+
+
+inline 
+bool isValidIdentChar( char ch, bool allowNonAsciiIdents, const std::string &forceAllowedChars )
+{
+    if (forceAllowedChars.find(ch)!=forceAllowedChars.npos)
+        return true; // Force allowed
+
+    if ( (ch>=0 && ch<=' ') || ch==0x7F)
+        return false; // space and control chars are invalid
+
+    if (ch>0x7F || ch<0)
+    {
+        if (allowNonAsciiIdents)
+            return true;
+        else
+            return false;
+    }
+
+    // 31 invalid char, 33 ctrl+space, 1 0x7f, and valid - 26 upper alphas, 26 lower alphas, 10 digits, 1 '_' : total 31+33+1+26+26+10+1=128
+    static const char* invalidChars = "!\"#$%&\'()*+,-./:;<=>?@[\\]^`{|}~";
+
+    if (std::strchr(invalidChars, ch)!=0)
+        return false;
+
+    return true; // Alphanum or '_' char
+}
+
+inline 
+bool isValidIdentChar( wchar_t ch, bool allowNonAsciiIdents, const std::wstring &forceAllowedChars )
+{
+    if (forceAllowedChars.find(ch)!=forceAllowedChars.npos)
+        return true; // Force allowed
+
+    if ( (ch>=0 && ch<=L' ') || ch==0x7F)
+        return false; // space and control chars are invalid
+
+    if (ch>0x7F || ch<0)
+    {
+        if (allowNonAsciiIdents)
+            return true;
+        else
+            return false;
+    }
+
+    // 31 invalid char, 33 ctrl+space, 1 0x7f, and valid - 26 upper alphas, 26 lower alphas, 10 digits, 1 '_' : total 31+33+1+26+26+10+1=128
+    static const wchar_t* invalidChars = L"!\"#$%&\'()*+,-./:;<=>?@[\\]^`{|}~";
+
+    if (std::wcschr(invalidChars, ch)!=0)
+        return false;
+
+    return true; // Alphanum or '_' char
+}
+
+//----------------------------------------------------------------------------
+
+
+
+
+//----------------------------------------------------------------------------
 template <typename CharT> inline
 NameCharClass getNameCharClass( CharT ch, NameCharClass digitCharClass = NameCharClass::digit ) // NameCharClass::lower
 {
@@ -189,13 +290,11 @@ NameCharClass getNameCharClass( CharT ch, NameCharClass digitCharClass = NameCha
     if (isDigit(ch))
         return digitCharClass;
 
-    if (isAlpha(ch))
-    {
-        if (isLower(ch))
-           return NameCharClass::lower;
-        else
-           return NameCharClass::upper;
-    }
+    if (isLower(ch))
+       return NameCharClass::lower;
+
+    if (isUpper(ch))
+       return NameCharClass::upper;
 
     return NameCharClass::unknown;
 }
@@ -248,7 +347,17 @@ toPascal( const std::basic_string< CharT, Traits, Allocator > &str )
         return str;
 
     std::basic_string< CharT, Traits, Allocator > resStr = toLower(str);
-    resStr[0] = toUpper(resStr[0]);
+
+    std::basic_string< CharT, Traits, Allocator >::iterator it = resStr.begin();
+    for(; it!=resStr.end(); ++it)
+    {
+        auto charClass = getNameCharClass(*it);
+        if (charClass==NameCharClass::lower || charClass==NameCharClass::upper)
+            break;
+    }
+
+    if (it!=resStr.end())
+        *it = toUpper(*it);
 
     return resStr;
 }
@@ -586,7 +695,66 @@ splitName( const std::basic_string< CharT, Traits, Allocator > &str )
 inline std::vector< std::string  > splitName( const char    * pStr ) { return splitName( std::string(pStr ) ); }
 inline std::vector< std::wstring > splitName( const wchar_t * pStr ) { return splitName( std::wstring(pStr) ); }
 
+//----------------------------------------------------------------------------
 
+
+
+//----------------------------------------------------------------------------
+template< class CharT, class Traits = std::char_traits<CharT>, class Allocator = std::allocator<CharT> >
+inline std::basic_string< CharT, Traits, Allocator >
+filterName( const std::basic_string< CharT, Traits, Allocator > &str, bool allowNonAsciiIdents, const std::basic_string< CharT, Traits, Allocator > &forceAllowedChars )
+{
+    typedef std::basic_string< CharT, Traits, Allocator >   string_type;
+
+    string_type res; res.reserve(str.size());
+
+    typename string_type::const_iterator it = str.begin();
+
+    for(; it!=str.end(); ++it)
+    {
+        if (isValidIdentChar( *it, allowNonAsciiIdents, forceAllowedChars ))
+            res.append(1, *it);
+        else
+            res.append(1, '_');
+    }
+
+    return res;
+
+}
+
+//------------------------------
+template< class CharT, class Traits = std::char_traits<CharT>, class Allocator = std::allocator<CharT> >
+inline std::basic_string< CharT, Traits, Allocator >
+filterName( const std::basic_string< CharT, Traits, Allocator > &str, bool allowNonAsciiIdents )
+{
+    return filterName(str, allowNonAsciiIdents, std::basic_string< CharT, Traits, Allocator >() );
+}
+
+//----------------------------------------------------------------------------
+
+
+
+
+//----------------------------------------------------------------------------
+template< class CharT, class Traits = std::char_traits<CharT>, class Allocator = std::allocator<CharT> >
+inline std::basic_string< CharT, Traits, Allocator >
+fixName( std::basic_string< CharT, Traits, Allocator > str )
+{
+    if (!str.empty() && isDigit(str[0]))
+    {
+        str.insert(0, 1, (CharT)'_');
+    }
+
+    return str;
+    
+}
+
+//----------------------------------------------------------------------------
+
+
+
+
+//----------------------------------------------------------------------------
 template< class CharT, class Traits = std::char_traits<CharT>, class Allocator = std::allocator<CharT> >
 inline std::basic_string< CharT, Traits, Allocator >
 formatName( const std::basic_string< CharT, Traits, Allocator > &str, NameStyle nameStyle )
@@ -686,7 +854,7 @@ formatName( const std::basic_string< CharT, Traits, Allocator > &str, NameStyle 
         case NameStyle::cppCamelMixedStyle :
         case NameStyle::cppPascalMixedStyle:
         case NameStyle::defineStyle        :
-             return strRes; // Don't add underscore prefix/suffix
+             return fixName(strRes); // Don't add underscore prefix/suffix
     }
 
     // add prefix
@@ -701,13 +869,22 @@ formatName( const std::basic_string< CharT, Traits, Allocator > &str, NameStyle 
         strRes = strRes + *postfixIt;
     }
 
-    return strRes;
+    return fixName(strRes);
 }
 
 inline std::string  formatName( const char    * pStr, NameStyle nameStyle ) { return formatName( std::string(pStr ), nameStyle ); }
 inline std::wstring formatName( const wchar_t * pStr, NameStyle nameStyle ) { return formatName( std::wstring(pStr), nameStyle ); }
                                    
+//----------------------------------------------------------------------------
 
 
-} // namespace cpp
+
+
+
+
+
+
+
+
+} // namespace marty_cpp
 

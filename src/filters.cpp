@@ -12,6 +12,8 @@
 #include <random>
 #include <sstream>
 #include <string>
+//#include <boost/algorithm/string/split.hpp>
+
 
 using namespace std::string_literals;
 
@@ -45,6 +47,7 @@ std::unordered_map<std::string, ExpressionFilter::FilterFactoryFn> s_filters = {
     { "dictsort", &FilterFactory<filters::DictSort>::Create },
     { "escape", FilterFactory<filters::StringConverter>::MakeCreator(filters::StringConverter::EscapeHtmlMode) },
     { "escapecpp", FilterFactory<filters::StringConverter>::MakeCreator(filters::StringConverter::EscapeCppMode) },
+    { "escapeident", FilterFactory<filters::StringConverter>::MakeCreator(filters::StringConverter::EscapeIdentMode) },
     { "ident" , FilterFactory<filters::StringConverter>::MakeCreator(filters::StringConverter::IdentMode) },
     //{ "identstyle" , FilterFactory<filters::StringConverter>::MakeCreator(filters::StringConverter::CppIdentMode) },
     { "first", FilterFactory<filters::SequenceAccessor>::MakeCreator(filters::SequenceAccessor::FirstItemMode) },
@@ -53,6 +56,7 @@ std::unordered_map<std::string, ExpressionFilter::FilterFactoryFn> s_filters = {
     { "groupby", &FilterFactory<filters::GroupBy>::Create },
     { "int", FilterFactory<filters::ValueConverter>::MakeCreator(filters::ValueConverter::ToIntMode) },
     { "join", &FilterFactory<filters::Join>::Create },
+    { "split", &FilterFactory<filters::Split>::Create },
     { "last", FilterFactory<filters::SequenceAccessor>::MakeCreator(filters::SequenceAccessor::LastItemMode) },
     { "length", FilterFactory<filters::SequenceAccessor>::MakeCreator(filters::SequenceAccessor::LengthMode) },
     { "list", FilterFactory<filters::ValueConverter>::MakeCreator(filters::ValueConverter::ToListMode) },
@@ -99,6 +103,69 @@ extern FilterPtr CreateFilter(std::string filterName, CallParamsInfo params)
 
 namespace filters
 {
+
+Split::Split(FilterParams params)
+{
+    ParseParams({ { "d", false, std::string() }, { "killempty", false, false } /* , { "attribute" } */  }, params);
+}
+
+InternalValue Split::Filter(const InternalValue& baseVal, RenderContext& context)
+{
+    //InternalValue attrName = GetArgumentValue("attribute", context);
+
+
+    // result = ListAdapter::CreateAdapter(val.size(), [str = val](size_t idx) { return InternalValue(TargetString(str.substr(idx, 1))); });
+    // static ListAdapter CreateAdapter(const ValuesList& values);
+    /*
+    bool isConverted = false;
+    ListAdapter values = ConvertToList(baseVal, attrName, isConverted);
+
+    if (!isConverted)
+        return InternalValue();
+
+    bool isFirst = true;
+    InternalValue result;
+    InternalValue delimiter = m_args["d"]->Evaluate(context);
+    for (const InternalValue& val : values)
+    {
+        if (isFirst)
+            isFirst = false;
+        else
+            result = Apply2<visitors::StringJoiner>(result, delimiter);
+
+        result = Apply2<visitors::StringJoiner>(result, val);
+    }
+    */
+
+    std::string str = AsString(baseVal);
+    std::string defDelim = ",";
+    //InternalValue attrName = GetArgumentValue("attribute", context);
+    std::string delim     = GetAsSameString(str, this->GetArgumentValue("d", context)).value_or(defDelim);
+    bool killEmpty = ConvertToBool(this->GetArgumentValue("killempty", context));//.value_or(false);
+
+    // using ValuesList = std::vector<Value>;
+    ValuesList resList;
+    //InternalValueList resList;
+
+    std::string::size_type startPos = 0;
+    std::string::size_type  delimPos = str.find(delim, startPos);
+    
+    while(delimPos!=str.npos)
+    {
+        if (startPos!=delimPos || !killEmpty)
+        {
+            resList.emplace_back( /* Internal */ Value(std::string(str, startPos, delimPos-startPos)));
+        }
+
+        startPos = delimPos+delim.size();
+        delimPos = str.find(delim, startPos);
+    }
+
+    resList.emplace_back(Value(std::string(str, startPos)));
+
+    // ValuesListAdapter
+    return ListAdapter::CreateAdapter(std::move(resList));
+}
 
 Join::Join(FilterParams params)
 {
